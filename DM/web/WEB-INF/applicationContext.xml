@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans-4.3.xsd 
+	http://www.springframework.org/schema/aop 
+	http://www.springframework.org/schema/aop/spring-aop-4.3.xsd 
+	http://www.springframework.org/schema/tx 
+	http://www.springframework.org/schema/tx/spring-tx-4.3.xsd 
+	http://www.springframework.org/schema/context 
+	http://www.springframework.org/schema/context/spring-context-4.3.xsd 
+	">
+	
+	<!-- 开启注解 -->
+	<context:annotation-config/>
+	<!-- 扫描指定包 -->
+	<context:component-scan base-package="com.dm"/>
+	<!-- 开启aop自动代理 -->
+	<aop:aspectj-autoproxy/>
+	
+	<!-- 配置数据库连接池C3P0 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+		<!-- oracle -->
+		<!--<property name="driverClass" value="oracle.jdbc.driver.OracleDriver" />-->
+		<!--<property name="jdbcUrl" value="jdbc:oracle:thin:@localhost:1521:orcl" />-->
+		<!-- mysql -->
+ 		<property name="driverClass" value="com.mysql.jdbc.Driver" />
+ 		<property name="jdbcUrl" value="jdbc:mysql://localhost:3306/myproject?useUnicode=true&amp;characterEncoding=UTF8" />
+		<!-- sqlserver -->
+ 		<!--<property name="driverClass" value="com.microsoft.jdbc.sqlserver.SQLServerDriver" /> -->
+ 		<!--<property name="jdbcUrl" value="jdbc:microsoft:sqlserver://localhost:1433;DatabaseName=tempdb" /> -->
+		<property name="user" value="root" />
+		<property name="password" value="123456" />
+	</bean>
+
+	<!-- 配置SessionFactory -->
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<!-- 注入数据源 -->
+		<property name="dataSource" ref="dataSource" />
+		<!-- 配置hibernate参数 -->
+		<property name="hibernateProperties">
+			<props>
+				<!-- oracle -->
+				<!--<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>-->
+				<!-- mysql -->
+ 				<prop key="hibernate.dialect">org.hibernate.dialect.MySQL5Dialect</prop>
+				<!--sqlserver -->
+ 				<!--<prop key="hibernate.dialect">org.hibernate.dialect.SQLServer2008Dialect</prop> -->
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+				<!-- 
+					会话管理模式
+					Hibernate4以前不需要配置,默认为thread
+				 -->
+				<prop key="hibernate.current_session_context_class">
+					org.springframework.orm.hibernate5.SpringSessionContext
+				</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.fetch_size">50</prop>
+			</props>
+		</property>
+		
+		<!-- 扫描指定路径下的实体注解 -->
+		<property name="packagesToScan" value="com.dm.entity"/>
+		<!-- 扫描指定目录路径下的所有映射文件 -->
+ 		<!--<property name="mappingDirectoryLocations" value="classpath:com/ssh/entity"/> -->
+		<!-- 单独加载每一个映射文件 -->
+ 		<!--<property name="mappingResources"> -->
+ 			<!--<list> -->
+ 				<!--<value>com/ssh/entity/Users.hbm.xml</value> -->
+ 			<!--</list> -->
+ 		<!--</property> -->
+	</bean>
+	
+	<!-- =====================声明式事务开始===================== -->
+	<!-- 声明事务管理Bean -->
+	<bean id="transactionManager" class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory"/>
+	</bean>
+	
+	<!--使用注解完成声明式事务管理 -->
+ 	<!--<tx:annotation-driven transaction-manager="transactionManager"/> -->
+	
+	<!-- 设置事务传播等级 -->
+	<tx:advice id="txManager" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="*" propagation="REQUIRED"/>
+		</tx:attributes>
+	</tx:advice>
+	
+	<!-- 构建切面管理事务 -->
+	<aop:config>
+		<aop:pointcut expression="execution(* com.dm.service..*.*(..))" id="mycut"/>
+		<aop:advisor advice-ref="txManager" pointcut-ref="mycut"/>
+	</aop:config>
+	
+	<!-- =====================声明式事务结束===================== -->
+	
+	
+</beans>
